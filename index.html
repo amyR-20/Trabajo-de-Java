@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Cajero Automático — Amy Ramírez</title>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Sora:wght@300;400;600;700&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --green: #00ff88;
+    --green-dim: #00cc6a;
+    --green-dark: #003d1f;
+    --black: #050a05;
+    --surface: #0a110a;
+    --card: #0f180f;
+    --border: #1a2e1a;
+    --text: #c8f0d0;
+    --text-dim: #5a8a66;
+    --red: #ff4455;
+    --amber: #ffcc00;
+    --mono: 'Share Tech Mono', monospace;
+    --sans: 'Sora', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--black);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background-image:
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(0,255,136,0.03) 39px, rgba(0,255,136,0.03) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(0,255,136,0.02) 39px, rgba(0,255,136,0.02) 40px);
+  }
+
+  .atm-shell {
+    width: 100%;
+    max-width: 420px;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    overflow: hidden;
+    box-shadow: 0 0 60px rgba(0,255,136,0.06), 0 0 120px rgba(0,255,136,0.03);
+  }
+
+  .atm-top {
+    background: var(--surface);
+    padding: 1.25rem 1.5rem 1rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .atm-brand {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-dim);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .atm-status {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--green);
+  }
+
+  .dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .screen {
+    background: #020a04;
+    min-height: 220px;
+    padding: 1.5rem;
+    font-family: var(--mono);
+    border-bottom: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .screen::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--green), transparent);
+    animation: scan 3s linear infinite;
+    opacity: 0.4;
+  }
+
+  @keyframes scan {
+    0% { transform: translateY(0); }
+    100% { transform: translateY(220px); }
+  }
+
+  .screen-header {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.15em;
+    margin-bottom: 1.25rem;
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .screen-title {
+    font-size: 13px;
+    color: var(--green);
+    letter-spacing: 0.08em;
+    margin-bottom: 1rem;
+  }
+
+  .balance-display {
+    text-align: center;
+    padding: 1rem 0;
+  }
+
+  .balance-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.2em;
+    margin-bottom: 0.5rem;
+  }
+
+  .balance-amount {
+    font-size: 38px;
+    color: var(--green);
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+
+  .balance-currency {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-left: 4px;
+  }
+
+  .message-area {
+    font-size: 13px;
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 60px;
+  }
+
+  .message-area .prompt {
+    color: var(--green);
+  }
+
+  .message-area .error {
+    color: var(--red);
+  }
+
+  .message-area .success {
+    color: var(--green);
+  }
+
+  .message-area .info {
+    color: var(--amber);
+  }
+
+  .input-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 1rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    background: #060f06;
+  }
+
+  .input-prefix {
+    color: var(--green);
+    font-size: 13px;
+  }
+
+  .atm-input {
+    background: none;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    flex: 1;
+    caret-color: var(--green);
+  }
+
+  .atm-input::placeholder { color: var(--text-dim); }
+
+  .keypad {
+    padding: 1.25rem 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+
+  .key {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 0;
+    text-align: center;
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 18px;
+    color: var(--text);
+    transition: all 0.1s;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .key:hover { border-color: var(--green); color: var(--green); }
+  .key:active { transform: scale(0.94); background: var(--green-dark); }
+
+  .key.action {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.85rem 0;
+  }
+
+  .key.clear { color: var(--red); border-color: rgba(255,68,85,0.2); }
+  .key.clear:hover { border-color: var(--red); background: rgba(255,68,85,0.08); }
+
+  .key.enter { color: var(--green); border-color: rgba(0,255,136,0.3); background: var(--green-dark); }
+  .key.enter:hover { background: rgba(0,255,136,0.15); }
+
+  .menu-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 0.75rem;
+  }
+
+  .menu-btn {
+    background: #060f06;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text);
+    width: 100%;
+    text-align: left;
+  }
+
+  .menu-btn:hover { border-color: var(--green); color: var(--green); background: var(--green-dark); }
+  .menu-btn .num { color: var(--green); font-size: 11px; min-width: 16px; }
+
+  .atm-footer {
+    background: var(--surface);
+    padding: 0.75rem 1.5rem;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-link {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-dim);
+    text-decoration: none;
+    letter-spacing: 0.1em;
+    transition: color 0.15s;
+  }
+
+  .footer-link:hover { color: var(--green); }
+
+  .receipt {
+    font-size: 11px;
+    color: var(--text-dim);
+    border-top: 1px dashed var(--border);
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    line-height: 2;
+  }
+
+  .receipt-row {
+    display: flex;
+    justify-content: space-between;
+  }
+
+  .receipt-row .val { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="atm-shell">
+  <div class="atm-top">
+    <div class="atm-brand">BancoAR · ATM v2.0</div>
+    <div class="atm-status"><div class="dot"></div> EN LÍNEA</div>
+  </div>
+
+  <div class="screen" id="screen">
+    <div class="screen-header">
+      <span id="screen-time"></span>
+      <span>SESIÓN SEGURA</span>
+    </div>
+    <div id="screen-content"></div>
+  </div>
+
+  <div id="keypad-area" class="keypad"></div>
+
+  <div class="atm-footer">
+    <a href="https://github.com/amyR-20/Trabajo-de-Java" target="_blank" class="footer-link">↗ Ver código en GitHub</a>
+    <span style="font-family:var(--mono);font-size:10px;color:var(--text-dim)">Amy Ramírez · 2025</span>
+  </div>
+</div>
+
+<script>
+const ACCOUNTS = {
+  "1234": { pin: "0000", name: "Amy Ramírez", balance: 15750.00, history: [] }
+};
+
+let state = {
+  screen: "welcome",
+  cardNum: "",
+  account: null,
+  inputBuffer: "",
+  pendingAction: null,
+  newPin: "",
+};
+
+function now() {
+  return new Date().toLocaleTimeString("es-DO", {hour:"2-digit",minute:"2-digit",second:"2-digit"});
+}
+
+setInterval(() => {
+  const el = document.getElementById("screen-time");
+  if (el) el.textContent = now();
+}, 1000);
+
+function fmt(n) {
+  return "RD$ " + n.toLocaleString("es-DO", {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function render() {
+  const content = document.getElementById("screen-content");
+  const keypad = document.getElementById("keypad-area");
+  document.getElementById("screen-time").textContent = now();
+
+  if (state.screen === "welcome") {
+    content.innerHTML = `
+      <div class="screen-title">BIENVENIDO</div>
+      <div class="message-area">
+        <div>Inserte su tarjeta para comenzar.</div>
+        <br/>
+        <div class="info">[ Demo: use tarjeta <strong>1234</strong> ]</div>
+      </div>
+      <div class="input-row">
+        <span class="input-prefix">▶</span>
+        <input class="atm-input" id="main-input" placeholder="Número de tarjeta" maxlength="4" inputmode="numeric"/>
+      </div>`;
+    keypad.innerHTML = numpadHTML("Ingresar");
+    bindInput("main-input");
+    bindNumpad((v) => appendInput(v, 4), () => submitCard());
+
+  } else if (state.screen === "pin") {
+    const masked = "●".repeat(state.inputBuffer.length);
+    content.innerHTML = `
+      <div class="screen-title">VERIFICACIÓN DE IDENTIDAD</div>
+      <div class="message-area">
+        <div>Titular: <span class="prompt">${state.account.name}</span></div>
+        <br/>
+        <div>Ingrese su PIN:</div>
+        <div style="font-size:22px;letter-spacing:0.4em;margin-top:0.5rem;color:var(--green)">${masked || "____"}</div>
+      </div>`;
+    keypad.innerHTML = numpadHTML("Confirmar");
+    bindNumpad((v) => appendInput(v, 4), () => submitPin());
+
+  } else if (state.screen === "menu") {
+    content.innerHTML = `
+      <div class="screen-title">MENÚ PRINCIPAL</div>
+      <div class="message-area">
+        <div>Hola, <span class="prompt">${state.account.name}</span></div>
+      </div>
+      <div class="menu-options">
+        <button class="menu-btn" onclick="goTo('balance')"><span class="num">1</span> Consultar Saldo</button>
+        <button class="menu-btn" onclick="goTo('deposit')"><span class="num">2</span> Depósito</button>
+        <button class="menu-btn" onclick="goTo('withdraw')"><span class="num">3</span> Retiro</button>
+        <button class="menu-btn" onclick="goTo('pin-change')"><span class="num">4</span> Cambiar PIN</button>
+        <button class="menu-btn" onclick="logout()" style="color:var(--red);border-color:rgba(255,68,85,0.2)"><span class="num" style="color:var(--red)">0</span> Salir</button>
+      </div>`;
+    keypad.innerHTML = "";
+
+  } else if (state.screen === "balance") {
+    content.innerHTML = `
+      <div class="screen-title">SALDO DISPONIBLE</div>
+      <div class="balance-display">
+        <div class="balance-label">SALDO ACTUAL</div>
+        <div class="balance-amount">${fmt(state.account.balance)}</div>
+      </div>
+      ${state.account.history.length ? `
+      <div class="receipt">
+        <div style="color:var(--green);margin-bottom:4px;font-size:10px;letter-spacing:0.15em">ÚLTIMOS MOVIMIENTOS</div>
+        ${state.account.history.slice(-3).reverse().map(h=>`
+        <div class="receipt-row"><span>${h.type}</span><span class="val" style="color:${h.amount>0?'var(--green)':'var(--red)'}">
+          ${h.amount>0?'+':''}${fmt(h.amount)}</span></div>`).join('')}
+      </div>` : ''}`;
+    keypad.innerHTML = backBtnHTML();
+
+  } else if (state.screen === "deposit") {
+    content.innerHTML = `
+      <div class="screen-title">DEPÓSITO</div>
+      <div class="message-area">
+        <div>Ingrese el monto a depositar:</div>
+        <div class="input-row" style="margin-top:0.75rem">
+          <span class="input-prefix">RD$</span>
+          <input class="atm-input" id="main-input" placeholder="0.00" maxlength="8" inputmode="numeric"/>
+        </div>
+      </div>`;
+    keypad.innerHTML = numpadHTML("Depositar");
+    bindInput("main-input");
+    bindNumpad((v) => appendInput(v, 8), () => doDeposit());
+
+  } else if (state.screen === "withdraw") {
+    content.innerHTML = `
+      <div class="screen-title">RETIRO</div>
+      <div class="message-area">
+        <div>Saldo: <span class="prompt">${fmt(state.account.balance)}</span></div>
+        <br/>
+        <div>Ingrese el monto a retirar:</div>
+        <div class="input-row" style="margin-top:0.75rem">
+          <span class="input-prefix">RD$</span>
+          <input class="atm-input" id="main-input" placeholder="0.00" maxlength="8" inputmode="numeric"/>
+        </div>
+      </div>`;
+    keypad.innerHTML = numpadHTML("Retirar");
+    bindInput("main-input");
+    bindNumpad((v) => appendInput(v, 8), () => doWithdraw());
+
+  } else if (state.screen === "pin-change") {
+    content.innerHTML = `
+      <div class="screen-title">CAMBIAR PIN</div>
+      <div class="message-area">
+        <div>Ingrese su <span class="prompt">nuevo PIN</span> de 4 dígitos:</div>
+        <div style="font-size:22px;letter-spacing:0.4em;margin-top:0.75rem;color:var(--green)">
+          ${"●".repeat(state.inputBuffer.length) || "____"}
+        </div>
+      </div>`;
+    keypad.innerHTML = numpadHTML("Confirmar");
+    bindNumpad((v) => appendInput(v, 4), () => doNewPin());
+
+  } else if (state.screen === "pin-confirm") {
+    content.innerHTML = `
+      <div class="screen-title">CONFIRMAR NUEVO PIN</div>
+      <div class="message-area">
+        <div>Repita el nuevo PIN:</div>
+        <div style="font-size:22px;letter-spacing:0.4em;margin-top:0.75rem;color:var(--green)">
+          ${"●".repeat(state.inputBuffer.length) || "____"}
+        </div>
+      </div>`;
+    keypad.innerHTML = numpadHTML("Confirmar");
+    bindNumpad((v) => appendInput(v, 4), () => doConfirmPin());
+
+  } else if (state.screen === "result") {
+    content.innerHTML = `
+      <div class="screen-title" style="color:${state.resultOk?'var(--green)':'var(--red)'}">
+        ${state.resultOk ? "✓ OPERACIÓN EXITOSA" : "✗ ERROR"}
+      </div>
+      <div class="message-area">
+        <div class="${state.resultOk?'success':'error'}">${state.resultMsg}</div>
+        ${state.resultOk && state.account ? `
+        <div class="receipt">
+          <div class="receipt-row"><span>Nuevo saldo</span><span class="val">${fmt(state.account.balance)}</span></div>
+          <div class="receipt-row"><span>Fecha</span><span class="val">${new Date().toLocaleDateString("es-DO")}</span></div>
+        </div>` : ''}
+      </div>`;
+    keypad.innerHTML = backBtnHTML("Volver al menú");
+  }
+
+  const inp = document.getElementById("main-input");
+  if (inp) inp.focus();
+}
+
+function numpadHTML(label) {
+  return `<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;padding:1.25rem 1.5rem">
+    ${[1,2,3,4,5,6,7,8,9].map(n=>`<button class="key" onclick="numKey('${n}')">${n}</button>`).join('')}
+    <button class="key action clear" onclick="clearInput()">Borrar</button>
+    <button class="key" onclick="numKey('0')">0</button>
+    <button class="key action enter" onclick="submitAction()">${label}</button>
+  </div>`;
+}
+
+function backBtnHTML(label="Volver al menú") {
+  return `<div style="padding:1.25rem 1.5rem">
+    <button class="key action enter" style="width:100%;padding:1rem" onclick="goTo('menu')">${label}</button>
+  </div>`;
+}
+
+function numKey(v) {
+  const inp = document.getElementById("main-input");
+  if (inp) { inp.value += v; state.inputBuffer = inp.value; }
+  else {
+    if (state.inputBuffer.length < 8) {
+      state.inputBuffer += v;
+      render();
+    }
+  }
+}
+
+function clearInput() {
+  const inp = document.getElementById("main-input");
+  if (inp) { inp.value = inp.value.slice(0,-1); state.inputBuffer = inp.value; }
+  else { state.inputBuffer = state.inputBuffer.slice(0,-1); render(); }
+}
+
+function appendInput(v, max) {
+  const inp = document.getElementById("main-input");
+  if (inp && inp.value.length < max) { inp.value += v; state.inputBuffer = inp.value; }
+}
+
+function submitAction() {
+  if (state.screen === "welcome") submitCard();
+  else if (state.screen === "pin") submitPin();
+  else if (state.screen === "deposit") doDeposit();
+  else if (state.screen === "withdraw") doWithdraw();
+  else if (state.screen === "pin-change") doNewPin();
+  else if (state.screen === "pin-confirm") doConfirmPin();
+}
+
+function bindInput(id) {
+  setTimeout(() => {
+    const inp = document.getElementById(id);
+    if (!inp) return;
+    inp.addEventListener("keydown", e => {
+      if (e.key === "Enter") submitAction();
+    });
+    inp.addEventListener("input", () => { state.inputBuffer = inp.value; });
+    inp.focus();
+  }, 50);
+}
+
+function bindNumpad(onNum, onEnter) {}
+
+function submitCard() {
+  const num = state.inputBuffer || (document.getElementById("main-input")?.value);
+  if (ACCOUNTS[num]) {
+    state.account = ACCOUNTS[num];
+    state.cardNum = num;
+    state.inputBuffer = "";
+    state.screen = "pin";
+  } else {
+    alert("Tarjeta no encontrada. Use: 1234");
+  }
+  render();
+}
+
+function submitPin() {
+  const pin = state.inputBuffer || (document.getElementById("main-input")?.value);
+  if (pin === state.account.pin) {
+    state.inputBuffer = "";
+    state.screen = "menu";
+  } else {
+    state.inputBuffer = "";
+    state.screen = "welcome";
+    alert("PIN incorrecto. Intente de nuevo.");
+  }
+  render();
+}
+
+function goTo(s) {
+  state.inputBuffer = "";
+  state.screen = s;
+  render();
+}
+
+function doDeposit() {
+  const amount = parseFloat(state.inputBuffer || document.getElementById("main-input")?.value);
+  if (!amount || amount <= 0) { alert("Monto inválido"); return; }
+  state.account.balance += amount;
+  state.account.history.push({ type: "Depósito", amount });
+  state.resultOk = true;
+  state.resultMsg = `Depósito de ${fmt(amount)} realizado con éxito.`;
+  state.inputBuffer = "";
+  state.screen = "result";
+  render();
+}
+
+function doWithdraw() {
+  const amount = parseFloat(state.inputBuffer || document.getElementById("main-input")?.value);
+  if (!amount || amount <= 0) { alert("Monto inválido"); return; }
+  if (amount > state.account.balance) {
+    state.resultOk = false;
+    state.resultMsg = "Fondos insuficientes para completar el retiro.";
+    state.inputBuffer = "";
+    state.screen = "result";
+    render();
+    return;
+  }
+  state.account.balance -= amount;
+  state.account.history.push({ type: "Retiro", amount: -amount });
+  state.resultOk = true;
+  state.resultMsg = `Retiro de ${fmt(amount)} realizado. Retire su efectivo.`;
+  state.inputBuffer = "";
+  state.screen = "result";
+  render();
+}
+
+function doNewPin() {
+  const pin = state.inputBuffer;
+  if (pin.length !== 4) { alert("El PIN debe tener 4 dígitos"); return; }
+  state.newPin = pin;
+  state.inputBuffer = "";
+  state.screen = "pin-confirm";
+  render();
+}
+
+function doConfirmPin() {
+  const pin = state.inputBuffer;
+  if (pin !== state.newPin) {
+    state.resultOk = false;
+    state.resultMsg = "Los PINs no coinciden. Intente de nuevo.";
+  } else {
+    state.account.pin = pin;
+    state.resultOk = true;
+    state.resultMsg = "PIN actualizado correctamente.";
+  }
+  state.newPin = "";
+  state.inputBuffer = "";
+  state.screen = "result";
+  render();
+}
+
+function logout() {
+  state = { screen:"welcome", cardNum:"", account:null, inputBuffer:"", pendingAction:null, newPin:"" };
+  render();
+}
+
+render();
+</script>
+</body>
+</html>
